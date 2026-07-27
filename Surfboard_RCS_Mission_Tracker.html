@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surfboard RCS — Mission Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  :root {
+    --ocean:     #0A1F3D;
+    --ocean-mid: #0F3460;
+    --ocean-lit: #0077B6;
+    --surface:   #E8F4FD;
+    --surface2:  #F4F8FB;
+    --gold:      #B8860B;
+    --gold-soft: #FFF8E7;
+    --green:     #1A5C2A;
+    --green-soft:#E8F5E9;
+    --amber:     #B45309;
+    --red:       #991B1B;
+    --ink:       #0D1B2A;
+    --ink-mid:   #3D5A73;
+    --ink-faint: #7A94A8;
+    --white:     #FFFFFF;
+    --rule:      #C8D8E4;
+    --r:         8px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100vh; }
+  body {
+    background: var(--surface2);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .mono { font-family: 'Share Tech Mono', monospace; }
+
+  /* ── HEADER ────────────────────────────────────── */
+  header {
+    background: linear-gradient(160deg, var(--ocean) 0%, var(--ocean-mid) 100%);
+    color: var(--white);
+    padding: clamp(28px,5vw,48px) clamp(20px,5vw,64px) 0;
+    border-bottom: 3px solid var(--ocean-lit);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      0deg, transparent, transparent 39px,
+      rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px
+    ),
+    repeating-linear-gradient(
+      90deg, transparent, transparent 39px,
+      rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px
+    );
+    pointer-events: none;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 32px;
+    align-items: start;
+    position: relative;
+    z-index: 1;
+  }
+  .brand-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--ocean-lit);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(38px, 7vw, 64px);
+    letter-spacing: 0.06em;
+    line-height: 0.9;
+    margin-bottom: 12px;
+  }
+  h1 em {
+    font-style: normal;
+    color: var(--ocean-lit);
+  }
+  .header-sub {
+    font-size: 13.5px;
+    color: #90AABF;
+    max-width: 500px;
+    line-height: 1.55;
+  }
+  .big-pct {
+    text-align: right;
+    padding-top: 4px;
+  }
+  .big-pct-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(56px, 9vw, 80px);
+    line-height: 0.85;
+    color: var(--white);
+  }
+  .big-pct-num span { font-size: 36px; color: var(--ocean-lit); }
+  .big-pct-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: #7A94A8;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .big-pct-code {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--ocean-lit);
+    margin-top: 6px;
+  }
+
+  /* ── PROGRESS RAIL ─────────────────────────────── */
+  .rail-section {
+    max-width: 1200px;
+    margin: 24px auto 0;
+    position: relative;
+    z-index: 1;
+    padding: 0 0 32px;
+  }
+  .rail-track {
+    position: relative;
+    height: 12px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.1);
+    overflow: visible;
+  }
+  .rail-done {
+    position: absolute;
+    left: 0; top: 0;
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--green), var(--ocean-lit));
+    transition: width 0.6s ease;
+  }
+  .rail-code {
+    position: absolute;
+    top: 0; height: 100%;
+    border-radius: 0 99px 99px 0;
+    background: linear-gradient(90deg, var(--ocean-lit), var(--gold));
+    opacity: 0.5;
+    transition: left 0.6s ease, width 0.6s ease;
+  }
+  .rail-vessel {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: left 0.6s ease;
+    width: 36px;
+    height: 24px;
+  }
+  .rail-flag {
+    position: absolute;
+    right: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px; height: 22px;
+  }
+  .rail-caps {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: #5A7A8E;
+    text-transform: uppercase;
+  }
+
+  /* ── MAIN ──────────────────────────────────────── */
+  main { max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px,5vw,64px) 80px; }
+
+  .section-head { margin: clamp(44px,6vw,60px) 0 28px; }
+  .eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .eyebrow.done { color: var(--green); }
+  .eyebrow.pending { color: var(--amber); }
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px,5vw,40px);
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .section-desc {
+    font-size: 13.5px;
+    color: var(--ink-mid);
+    max-width: 680px;
+    line-height: 1.6;
+  }
+
+  /* ── TIMELINE ──────────────────────────────────── */
+  .tl-depart {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .timeline {
+    border-left: 2px solid var(--ocean-lit);
+    padding-left: 32px;
+    margin-left: 6px;
+  }
+  .tl-item {
+    position: relative;
+    padding-bottom: 22px;
+  }
+  .tl-item:last-child { padding-bottom: 4px; }
+  .tl-dot {
+    position: absolute;
+    left: -40px;
+    top: 3px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--green);
+    border: 3px solid var(--surface2);
+    box-shadow: 0 0 0 2px var(--green);
+  }
+  .tl-dot.code {
+    background: var(--gold);
+    box-shadow: 0 0 0 2px var(--gold);
+  }
+  .tl-tick {
+    position: absolute;
+    left: -5px;
+    top: 10px;
+    width: 7px; height: 1px;
+    background: var(--ocean-lit);
+    opacity: 0.4;
+  }
+  .tl-date {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: var(--ocean-lit);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+  .tl-date.code { color: var(--gold); }
+  .tl-text { font-size: 14px; color: var(--ink); line-height: 1.5; max-width: 660px; }
+  .tl-badge {
+    display: inline-block;
+    margin-top: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    background: var(--gold-soft);
+    border-radius: 4px;
+    padding: 2px 7px;
+    text-transform: uppercase;
+  }
+
+  /* ── STAT CHIPS ────────────────────────────────── */
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+  .chip {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    padding: 14px 20px;
+    flex: 1 1 110px;
+    min-width: 110px;
+  }
+  .chip-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--ocean);
+  }
+  .chip-num.g { color: var(--green); }
+  .chip-num.a { color: var(--gold); }
+  .chip-lbl {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  /* ── CARDS ─────────────────────────────────────── */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px,1fr)); gap: 16px; }
+  .card {
+    background: var(--white);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 20px 20px 16px;
+  }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .card-code {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--white);
+    background: var(--ocean-mid);
+    border-radius: 5px;
+    padding: 4px 8px;
+    line-height: 1;
+  }
+  .card-title { font-size: 14.5px; font-weight: 600; flex: 1; min-width: 120px; }
+  .card-count {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+  }
+  .card-bar { height: 5px; border-radius: 99px; background: var(--rule); overflow: hidden; margin-bottom: 14px; }
+  .card-bar-fill { height: 100%; background: var(--green); transition: width 0.35s; }
+
+  .task { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-top: 1px solid #EEF3F6; flex-wrap: wrap; }
+  .task:first-of-type { border-top: none; }
+  .task-text { font-size: 13.5px; line-height: 1.45; flex: 1; min-width: 140px; padding-top: 8px; color: var(--ink); }
+  .task.s2 .task-text { color: var(--ink-mid); }
+
+  .pill {
+    min-width: 114px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1.5px solid var(--rule);
+    background: var(--white);
+    color: var(--ink-faint);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pill:focus-visible { outline: 2px solid var(--ocean-lit); outline-offset: 2px; }
+  .pill[data-s="0"] { border-color: #C8D8E4; color: var(--ink-faint); }
+  .pill[data-s="1"] { border-color: var(--gold); color: var(--gold); background: var(--gold-soft); }
+  .pill[data-s="2"] { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; flex: 0 0 auto; }
+  .pill[data-s="1"] .dot, .pill[data-s="2"] .dot { background: currentColor; }
+
+  /* ── FINISH BANNER ─────────────────────────────── */
+  .finish {
+    margin-top: 60px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--rule);
+  }
+  .finish-stripe {
+    height: 14px;
+    background-image: repeating-conic-gradient(var(--ocean) 0% 25%, var(--white) 0% 50%);
+    background-size: 22px 22px;
+  }
+  .finish-body {
+    background: var(--ocean);
+    color: var(--white);
+    text-align: center;
+    padding: clamp(32px,6vw,48px) 24px clamp(36px,6vw,52px);
+  }
+  .finish-eyebrow {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.3em;
+    color: var(--ocean-lit);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .finish-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px,5vw,46px);
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+  }
+  .finish-pct {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--ocean-lit);
+    margin-bottom: 10px;
+  }
+  .finish-status { font-size: 13.5px; color: #90AABF; max-width: 520px; margin: 0 auto; line-height: 1.55; }
+
+  footer {
+    text-align: center;
+    padding: 24px 16px 40px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+  }
+  #saved-note { color: var(--green); opacity: 0; transition: opacity 0.4s; }
+  #saved-note.show { opacity: 1; }
+
+  @media (max-width: 768px) {
+    .header-inner { grid-template-columns: 1fr; }
+    .big-pct { text-align: left; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <p class="brand-tag">Surfboard RCS · Software + Hardware Build</p>
+      <h1>MISSION<br><em>TRACKER</em></h1>
+      <p class="header-sub">Every milestone from first line of code to open-water deployment — live progress shared with the whole team.</p>
+    </div>
+    <div class="big-pct">
+      <div class="big-pct-num mono" id="hdrPct">--<span>%</span></div>
+      <div class="big-pct-label">Done &amp; tested</div>
+      <div class="big-pct-code" id="hdrSub"></div>
+    </div>
+  </div>
+  <div class="rail-section">
+    <div class="rail-track">
+      <div class="rail-done" id="railDone" style="width:0%"></div>
+      <div class="rail-code" id="railCode" style="left:0%;width:0%"></div>
+      <div class="rail-vessel" id="railVessel" style="left:0%">
+        <svg viewBox="0 0 72 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="32" cy="22" rx="28" ry="10" fill="#EDF4F8" stroke="#0A1F3D" stroke-width="2.5"/>
+          <rect x="24" y="6" width="12" height="13" rx="3" fill="#EDF4F8" stroke="#0A1F3D" stroke-width="2.5"/>
+          <path d="M58 22 L70 14 L70 30 Z" fill="#EDF4F8" stroke="#0A1F3D" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="18" cy="22" r="2" fill="#0A1F3D"/>
+          <circle cx="28" cy="22" r="2" fill="#0A1F3D"/>
+        </svg>
+      </div>
+      <svg class="rail-flag" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="4" y1="1" x2="4" y2="27" stroke="#B8860B" stroke-width="2.5"/>
+        <path d="M4 3 L20 3 L16 8 L20 13 L4 13 Z" fill="#FFFFFF"/>
+      </svg>
+    </div>
+    <div class="rail-caps"><span>Mission start</span><span>Water deployment</span></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- PROGRESS LINE -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow done">▸ Live record</p>
+      <h2>The Progress Line</h2>
+      <p class="section-desc">Everything completed and logged in order — from the first planning session to today. Items marked gold are software-complete but hardware is still being installed and tested.</p>
+    </div>
+    <div class="tl-depart">— Mission Start, May 2026</div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- FINISH LINE -->
+  <section>
+    <div class="section-head">
+      <p class="eyebrow pending">▸ Remaining work</p>
+      <h2>The Finish Line</h2>
+      <p class="section-desc">Tap a task to move it forward. <strong>Code ready</strong> = software built, hardware not yet installed or tested. <strong>Done</strong> = hardware installed, integrated, and tested in the water. All changes save automatically.</p>
+    </div>
+
+    <div class="stats">
+      <div class="chip"><div class="chip-num g" id="sDone">0</div><div class="chip-lbl">Done &amp; tested</div></div>
+      <div class="chip"><div class="chip-num a" id="sCode">0</div><div class="chip-lbl">Code ready · hardware pending</div></div>
+      <div class="chip"><div class="chip-num" id="sNot">0</div><div class="chip-lbl">Not started</div></div>
+      <div class="chip"><div class="chip-num" id="sAreas">9</div><div class="chip-lbl">Build areas</div></div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <div class="finish">
+    <div class="finish-stripe"></div>
+    <div class="finish-body">
+      <p class="finish-eyebrow">Full deployment target</p>
+      <h3 class="finish-title" id="finTitle">Calculating course…</h3>
+      <div class="finish-pct mono" id="finPct">0%</div>
+      <p class="finish-status" id="finStatus">Loading milestone data…</p>
+    </div>
+    <div class="finish-stripe"></div>
+  </div>
+
+</main>
+
+<footer>
+  Surfboard RCS · Mission Tracker · Shared team view
+  <span id="saved-note">· saved ✓</span><br>
+  Last updated <span id="lastUp" class="mono">—</span>
+</footer>
+
+<script>
+(function () {
+
+  // ── COMPLETED MILESTONES (progress line) ────────────────────────────────
+  const DONE = [
+    { date: "May 2026", text: "Full project architecture designed — three-system family (Single, Twin, Quad) planned from first session" },
+    { date: "May 2026", text: "Mechanical and Electrical Engineer Installation Guide v1 produced — all mounts, wiring, waterproofing, and shopping lists" },
+    { date: "May 2026", text: "Executive Overview document produced — military and civilian applications, government value proposition" },
+    { date: "May 2026", text: "Project folder structure scaffolded — 39 files across onboard and GCS, git repository initialised" },
+    { date: "May 2026", text: "onboard/config.yaml and gcs/config.json written — all hardware settings, ports, baud rates, VPN IPs, unit configuration" },
+    { date: "May 2026", text: "jetson_bridge.py built — async TCP server, 11 drivers initialised in correct order, writer lock, telemetry every second, heartbeat every 2 seconds" },
+    { date: "May 2026", text: "furuno_gps.py built — full NMEA 0183 parser (RMC, GGA, GLL, VTG, GSA), decimal degree conversion, background serial thread" },
+    { date: "May 2026", text: "ping360_sonar.py built — full 360-degree Ethernet scan, obstacle detection with intensity threshold" },
+    { date: "May 2026", text: "battery_monitor.py built — DALY BMS serial protocol, full fault byte decoding, warn and critical thresholds" },
+    { date: "May 2026", text: "arduino_controller.py built — JSON serial protocol, message ID matching, background reader thread, command retry" },
+    { date: "May 2026", text: "lights_driver.py, speaker_driver.py, payload_driver.py, boom_sensor.py, mode_selector.py — all five built" },
+    { date: "May 2026", text: "day_camera.py and night_camera.py built — OpenCV capture, MJPEG streaming server, CLAHE IR enhancement for night vision" },
+    { date: "May 2026", text: "socket_bridge.py (GCS) built — QThread, per-unit TCP connections, Qt signals, heartbeat monitoring, latency measurement" },
+    { date: "May 2026", text: "GCS login screen built — authentication, lockout after 3 failures, spinner animation, connection flow" },
+    { date: "May 2026", text: "GCS main window built — dark theme, tab manager, top status bar, notification banner with animation" },
+    { date: "May 2026", text: "Dashboard panel built — GPS card with compass rose, battery gauge, propulsion bars, formation card, driver status row" },
+    { date: "May 2026", text: "Video panel built — MJPEG stream client, HUD overlay with GPS coordinates, recording, snapshot, fullscreen mode" },
+    { date: "May 2026", text: "Navigation panel built — real satellite and street map, waypoint click-to-add, geofence drawing, GPS trail" },
+    { date: "May 2026", text: "Sonar panel built — 360-degree radar display with QPainter, fade effect, obstacle list, proximity alert" },
+    { date: "May 2026", text: "Controls panel built — throttle and steering sliders, rate limiting, emergency stop, keyboard shortcuts" },
+    { date: "May 2026", text: "Payload panel built — two-step arm confirmation, pulsing armed state, air pressure gauge, submarine charging display" },
+    { date: "May 2026", text: "Mock server built — simulates 1, 2, or 4 Jetson units with realistic GPS, battery, sonar, video, and telemetry" },
+    { date: "May 2026", text: "Arduino Mega sketch built — ArduinoJson v6, relay and servo control, boom sensors, three-position mode switch, 500ms status broadcast" },
+    { date: "May 2026", text: "Full mock demo running — single unit, TWIN formation, QUAD formation all demonstrated in GCS" },
+    { date: "May 2026", text: "Starlink connected/disconnected indicator added to GCS top bar" },
+    { date: "May 2026", text: "Multi-unit formation system fixed — both unit pills showing, TWIN/QUAD auto-detection, formation sync in controls" },
+    { date: "Jun 2026",  text: "CEO update: propulsion revised — jet engines confirmed, tail rotor added for maneuvering, three-mode control (REMOTE/LOCAL/AUTO) confirmed" },
+    { date: "Jun 2026",  text: "autopilot.py built — Haversine navigation, waypoint following, approach logic, return to base, IDLE/NAVIGATING/APPROACHING/HOLDING states" },
+    { date: "Jun 2026",  text: "tail_rotor.py built — PWM lateral thrust control, Jetson.GPIO with Windows fallback for development" },
+    { date: "Jun 2026",  text: "mode_selector.py upgraded — three modes (REMOTE/LOCAL/AUTO), force override, clear override, physical switch polling" },
+    { date: "Jun 2026",  text: "Watch commander remote override system built — GCS forces mode change on any unit from anywhere in the world" },
+    { date: "Jun 2026",  text: "GCS autopilot controls built — START/PAUSE/RESUME mission, RETURN TO BASE, SAVE HOME, waypoint progress display" },
+    { date: "Jun 2026",  text: "Engineer Installation Guide v2 produced — boom sensors, local mode switch, compressed air, submarine charging all added" },
+    { date: "Jun 2026",  text: "Executive Overview v2 produced — updated for all three system configurations and submarine support capability" },
+    { date: "Jun 2026",  text: "Weekly Progress Report Week 1 produced for CEO" },
+    { date: "Jun 2026",  text: "Business plan summary prepared for state minister funding submission" },
+  ];
+
+  // ── FINISH LINE GROUPS ──────────────────────────────────────────────────
+  const GROUPS = [
+    {
+      code: "HW1", title: "Electronics installation — surfboard",
+      items: [
+        "Mount Jetson Xavier NX in waterproof electronics bay",
+        "Install LiFePO4 battery pack and BMS",
+        "Install power distribution board with fused rails for all subsystems",
+        "Wire all voltage regulators — 19V Jetson, 12V lights, 5V cameras, 48V Starlink",
+        "Mount and wire Arduino Mega and 8-channel relay board",
+        "Install main isolation switch on hull exterior",
+        "Mount and seal Starlink terminal on stern deck",
+        "Run all cable conduits and label every cable both ends",
+      ]
+    },
+    {
+      code: "HW2", title: "Sensor installation — surfboard",
+      items: [
+        "Mount day camera and night vision camera in bow housing",
+        "Install Furuno GP-1870F display pod and GPS antenna post",
+        "Install Blue Robotics Ping360 sonar in hull underside fairing",
+        "Mount directional loudspeaker and amplifier board",
+        "Install COLREGS navigation lights — port, starboard, stern",
+        "Install local mode switch housing on hull exterior (3-position REMOTE/LOCAL/AUTO)",
+        "Install boom lock sensor sockets with reed switches (System 2 and 3 only)",
+        "Waterproof all hull penetrations and test at pressure",
+      ]
+    },
+    {
+      code: "PRO", title: "Propulsion and maneuvering",
+      items: [
+        "Confirm final propulsion specification — jet engine or propeller with tail rotor",
+        "Install tail rotor thruster for lateral maneuvering",
+        "Wire tail rotor ESC to Jetson GPIO",
+        "Test full throttle range and steering response",
+        "Calibrate tail rotor PWM neutral, full left, and full right positions",
+      ]
+    },
+    {
+      code: "PAY", title: "Payload drop mechanism",
+      items: [
+        "CEO confirms payload type, weight, and dimensions",
+        "Cut hull and build fiberglass drop pod to confirmed dimensions",
+        "Install servo-actuated release gate with safety pin",
+        "Wire servo to Arduino Mega relay board",
+        "Test arm, drop, and disarm sequence on bench",
+      ]
+    },
+    {
+      code: "VPN", title: "WireGuard VPN and Starlink",
+      items: [
+        "Generate real WireGuard keypairs on Jetson and GCS laptop",
+        "Fill in wireguard/jetson.conf and wireguard/gcs.conf with real keys",
+        "Install WireGuard on Jetson — sudo apt install wireguard",
+        "Install Starlink terminal and connect Jetson via Ethernet",
+        "Confirm VPN tunnel — ping 10.0.0.1 from GCS laptop over Starlink",
+        "Update gcs/config.json IPs from 127.0.0.1 to 10.0.0.1",
+      ]
+    },
+    {
+      code: "INT", title: "Bench integration testing",
+      items: [
+        "Flash Arduino Mega with payload_controller.ino",
+        "Confirm Arduino serial JSON communication — ping/pong test",
+        "Deploy onboard/ folder to Jetson — install all Python dependencies",
+        "Run python3 main.py on Jetson — confirm all drivers initialise",
+        "Connect GCS to Jetson over local WiFi — confirm telemetry flows",
+        "Verify real GPS fix showing on GCS navigation map",
+        "Verify real battery percentage in dashboard",
+        "Verify real sonar scan data in sonar panel",
+        "Test lights on/off from GCS",
+        "Test throttle and steering commands reaching ESC",
+      ]
+    },
+    {
+      code: "WAT", title: "Water testing",
+      items: [
+        "Static water test — board in water, all electronics on, check for leaks",
+        "Confirm sonar reads water correctly from hull underside",
+        "GPS fix confirmed from water position",
+        "Propulsion test — throttle 0 to 20%, confirm movement",
+        "Steering test — confirm rudder and tail rotor responding",
+        "Emergency stop test — confirm instant stop from GCS",
+        "Full remote control patrol run via Starlink and WireGuard",
+        "Payload drop test with dummy payload",
+        "Night vision camera test in low light",
+        "Sonar proximity alert test — obstacle placed in water at known distance",
+      ]
+    },
+    {
+      code: "AUT", title: "Autopilot and override testing",
+      items: [
+        "Load waypoint mission from GCS map — send to Jetson",
+        "Start autopilot — confirm board follows waypoints autonomously",
+        "Confirm waypoint advancement and HOLDING state at mission end",
+        "Test PAUSE and RESUME mission commands",
+        "Test RETURN TO BASE from a known position",
+        "Test watch commander override — force REMOTE from GCS while in LOCAL mode",
+        "Confirm emergency stop halts autopilot immediately",
+        "Test AUTO mode tail rotor integration — lateral thrust during turns",
+      ]
+    },
+    {
+      code: "FMN", title: "Formation and submarine testing",
+      items: [
+        "Second surfboard unit built and tested as single unit",
+        "Twin catamaran formation assembled — boom sensors confirm TWIN auto-detection in GCS",
+        "Formation patrol test — both units controlled as one from GCS",
+        "Compressed air system installed and tested on central platform",
+        "Submarine battery charging tested — confirmed correct voltage and current",
+        "Full submarine surface support test — air supply and charging during dive",
+        "Quad formation assembled and tested — all four units as one formation",
+        "Full sea trial — all systems, all units, open water",
+      ]
+    },
+  ];
+
+  GROUPS.forEach(g => { g.ids = g.items.map((_, i) => `${g.code.toLowerCase()}-${i}`); });
+  const FINISH_TOTAL = GROUPS.reduce((s, g) => s + g.items.length, 0);
+  const TOTAL = DONE.length + FINISH_TOTAL;
+
+  const LABELS = ["Not started", "Code ready", "Done"];
+
+  let state = {};
+  GROUPS.forEach(g => g.ids.forEach(id => { state[id] = { s: 0, at: null }; }));
+
+  // ── BUILD CARDS ─────────────────────────────────────────────────────────
+  const cardsEl = document.getElementById('cards');
+  GROUPS.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    head.innerHTML = `
+      <div class="card-code">${g.code}</div>
+      <div class="card-title">${g.title}</div>
+      <div class="card-count mono" id="cnt-${g.code}">0/${g.items.length}</div>
+    `;
+    card.appendChild(head);
+
+    const bar = document.createElement('div');
+    bar.className = 'card-bar';
+    bar.innerHTML = `<div class="card-bar-fill" id="bar-${g.code}" style="width:0%"></div>`;
+    card.appendChild(bar);
+
+    g.items.forEach((text, i) => {
+      const id = g.ids[i];
+      const row = document.createElement('div');
+      row.className = 'task';
+      row.id = `row-${id}`;
+      row.innerHTML = `
+        <button class="pill" id="pill-${id}" data-id="${id}" data-s="0">
+          <span class="dot"></span><span class="pl">${LABELS[0]}</span>
+        </button>
+        <div class="task-text">${text}</div>
+      `;
+      card.appendChild(row);
+    });
+
+    cardsEl.appendChild(card);
+  });
+
+  // ── FIREBASE STORAGE ────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyBYen3EQPWmj_RnwZM94iebO-u5AS3ss9E",
+    authDomain: "project-trackers-1ae96.firebaseapp.com",
+    databaseURL: "https://project-trackers-1ae96-default-rtdb.firebaseio.com",
+    projectId: "project-trackers-1ae96",
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const DB_PATH = 'surfboard_rcs_mission_tracker_v1';
+
+  function applySnapshot(snap) {
+    const p = snap.val();
+    if (p && p.state) {
+      Object.keys(p.state).forEach(id => { if (state[id]) state[id] = p.state[id]; });
+    }
+    if (p && p.ts) {
+      document.getElementById('lastUp').textContent = new Date(p.ts).toLocaleString();
+    }
+    applyUI();
+    renderTimeline();
+    recalc();
+  }
+
+  async function load() {
+    try {
+      const snap = await db.ref(DB_PATH).once('value');
+      applySnapshot(snap);
+    } catch (e) {
+      // no saved state yet — render defaults
+      applyUI();
+      renderTimeline();
+      recalc();
+    }
+    // live sync — updates instantly when any team member makes a change
+    db.ref(DB_PATH).on('value', snap => {
+      try { applySnapshot(snap); } catch (e) { /* ignore */ }
+    });
+  }
+
+  async function save() {
+    try {
+      const payload = { state, ts: Date.now() };
+      await db.ref(DB_PATH).set(payload);
+      document.getElementById('lastUp').textContent = new Date().toLocaleString();
+      const n = document.getElementById('saved-note');
+      n.classList.add('show');
+      clearTimeout(save._t);
+      save._t = setTimeout(() => n.classList.remove('show'), 1600);
+    } catch (e) { console.error('Firebase save failed', e); }
+  }
+
+  // ── UI ───────────────────────────────────────────────────────────────────
+  function applyUI() {
+    GROUPS.forEach(g => g.ids.forEach(id => {
+      const st = state[id];
+      const pill = document.getElementById(`pill-${id}`);
+      const row = document.getElementById(`row-${id}`);
+      if (!pill) return;
+      pill.dataset.s = st.s;
+      pill.querySelector('.pl').textContent = LABELS[st.s];
+      row.classList.toggle('s2', st.s === 2);
+    }));
+  }
+
+  function renderTimeline() {
+    const tl = document.getElementById('timeline');
+    tl.innerHTML = '';
+
+    DONE.forEach(e => {
+      const d = document.createElement('div');
+      d.className = 'tl-item';
+      d.innerHTML = `
+        <div class="tl-dot"></div><div class="tl-tick"></div>
+        <div class="tl-date mono">${e.date}</div>
+        <div class="tl-text">${e.text}</div>
+      `;
+      tl.appendChild(d);
+    });
+
+    const live = [];
+    GROUPS.forEach(g => g.ids.forEach((id, i) => {
+      const st = state[id];
+      if (st.s >= 1 && st.at) live.push({ at: st.at, s: st.s, text: g.items[i], code: g.code });
+    }));
+    live.sort((a, b) => a.at - b.at);
+
+    live.forEach(e => {
+      const d = document.createElement('div');
+      d.className = 'tl-item';
+      const ds = new Date(e.at).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+      const isCode = e.s === 1;
+      d.innerHTML = `
+        <div class="tl-dot ${isCode ? 'code' : ''}"></div><div class="tl-tick"></div>
+        <div class="tl-date mono ${isCode ? 'code' : ''}">${ds} · ${e.code}</div>
+        <div class="tl-text">${e.text}${isCode ? '<div class="tl-badge">Code ready · hardware pending</div>' : ''}</div>
+      `;
+      tl.appendChild(d);
+    });
+  }
+
+  function recalc() {
+    let done = 0, code = 0, notS = 0;
+
+    GROUPS.forEach(g => {
+      let gDone = 0;
+      g.ids.forEach(id => {
+        const s = state[id].s;
+        if (s === 2) { done++; gDone++; }
+        else if (s === 1) code++;
+        else notS++;
+      });
+      const pct = g.items.length ? Math.round(gDone / g.items.length * 100) : 0;
+      const b = document.getElementById(`bar-${g.code}`);
+      const c = document.getElementById(`cnt-${g.code}`);
+      if (b) b.style.width = pct + '%';
+      if (c) c.textContent = `${gDone}/${g.items.length}`;
+    });
+
+    const totalDone = DONE.length + done;
+    const pct = Math.round(totalDone / TOTAL * 100);
+    const codePct = Math.round(code / TOTAL * 100);
+    const remaining = FINISH_TOTAL - done;
+
+    document.getElementById('hdrPct').innerHTML = pct + '<span>%</span>';
+    document.getElementById('hdrSub').textContent = codePct > 0 ? `+${codePct}% code ready` : '';
+    document.getElementById('railDone').style.width = pct + '%';
+    document.getElementById('railCode').style.left = pct + '%';
+    document.getElementById('railCode').style.width = codePct + '%';
+    document.getElementById('railVessel').style.left = `calc(${pct}% - 18px)`;
+
+    document.getElementById('sDone').textContent = done;
+    document.getElementById('sCode').textContent = code;
+    document.getElementById('sNot').textContent = notS;
+
+    document.getElementById('finPct').textContent = pct + '% of full deployment complete';
+
+    const ft = document.getElementById('finTitle');
+    const fs = document.getElementById('finStatus');
+    if (remaining === 0) {
+      ft.textContent = 'Surfboard RCS is fully deployed and operational';
+      fs.textContent = 'Every milestone across software, hardware, testing, and deployment is complete.';
+    } else {
+      ft.textContent = `${remaining} milestone${remaining === 1 ? '' : 's'} to full water deployment`;
+      fs.textContent = `${totalDone} of ${TOTAL} total milestones complete across software build, hardware installation, and field testing.`;
+    }
+  }
+
+  // ── INTERACTIONS ─────────────────────────────────────────────────────────
+  document.getElementById('cards').addEventListener('click', e => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    const id = pill.dataset.id;
+    const st = state[id];
+    st.s = (st.s + 1) % 3;
+    if (st.s >= 1 && !st.at) st.at = Date.now();
+    if (st.s === 0) st.at = null;
+    applyUI();
+    renderTimeline();
+    recalc();
+    save();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
