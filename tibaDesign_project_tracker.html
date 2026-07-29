@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Tracker — Onyi Victory Obiajulu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF1EF;
+  --paper-line:#D6DEDA;
+  --ink:#12283F;
+  --ink-soft:#4C6478;
+  --ink-faint:#8298A8;
+  --navy-deep:#0D2135;
+  --navy-deep2:#0A1A29;
+  --navy-mid:#1F5C99;
+  --green:#1B7A57;
+  --green-soft:#E4F1EA;
+  --amber:#B23D0F;
+  --gold:#B4841E;
+  --gold-soft:#F6EDD8;
+  --white:#FFFFFF;
+  --radius:10px;
+}
+
+*{ box-sizing:border-box; }
+html, body{ margin:0; padding:0; }
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', sans-serif;
+  min-height:100vh;
+  -webkit-text-size-adjust:100%;
+}
+
+.mono{ font-family:'IBM Plex Mono', monospace; }
+
+header{
+  background:linear-gradient(180deg, var(--navy-deep) 0%, var(--navy-deep2) 100%);
+  color:var(--white);
+  padding:clamp(22px, 4vw, 34px) clamp(16px, 4vw, 56px) clamp(22px, 4vw, 30px);
+  position:relative;
+  overflow:hidden;
+  border-bottom:3px solid var(--gold);
+}
+
+.head-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  gap:18px;
+  max-width:1180px;
+  margin:0 auto;
+  position:relative;
+  z-index:1;
+}
+
+.brand-eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.24em;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin:0 0 6px;
+}
+
+h1.wordmark{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(30px, 6vw, 54px);
+  letter-spacing:0.05em;
+  margin:0;
+  line-height:0.95;
+}
+
+.subtitle{
+  font-size:13.5px;
+  color:#B9C6D2;
+  margin:8px 0 0;
+  max-width:520px;
+  line-height:1.5;
+}
+
+.gauge{
+  text-align:right;
+  min-width:150px;
+}
+
+.gauge-num{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(44px, 8vw, 60px);
+  line-height:0.85;
+  color:var(--white);
+}
+
+.gauge-num span{
+  font-size:24px;
+  color:var(--gold);
+  margin-left:2px;
+}
+
+.gauge-label{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  letter-spacing:0.16em;
+  color:#8FA3B6;
+  text-transform:uppercase;
+  margin-top:2px;
+}
+
+.gauge-sub{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--gold);
+  margin-top:6px;
+}
+
+.rail-wrap{
+  max-width:1180px;
+  margin:24px auto 0;
+  position:relative;
+  z-index:1;
+}
+
+.rail-track{
+  position:relative;
+  height:10px;
+  border-radius:99px;
+  background:rgba(255, 255, 255, 0.12);
+  overflow:visible;
+}
+
+.rail-fill{
+  position:absolute;
+  left:0;
+  top:0;
+  height:100%;
+  border-radius:99px;
+  background:linear-gradient(90deg, #14563C, var(--green));
+  transition:width 0.5s ease;
+}
+
+.rail-endcaps{
+  display:flex;
+  justify-content:space-between;
+  margin-top:9px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10px;
+  letter-spacing:0.12em;
+  color:#8FA3B6;
+  text-transform:uppercase;
+}
+
+main{
+  max-width:1180px;
+  margin:0 auto;
+  padding:0 clamp(16px, 4vw, 56px) 70px;
+}
+
+.section-head{
+  margin:clamp(38px, 6vw, 56px) 0 24px;
+}
+
+.section-eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  letter-spacing:0.22em;
+  color:var(--amber);
+  text-transform:uppercase;
+  margin:0 0 6px;
+}
+
+.section-eyebrow.done{
+  color:var(--green);
+}
+
+h2.section-title{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(26px, 5vw, 36px);
+  margin:0;
+  letter-spacing:0.03em;
+  color:var(--ink);
+}
+
+.section-sub{
+  font-size:14px;
+  color:var(--ink-soft);
+  margin:8px 0 0;
+  max-width:660px;
+  line-height:1.55;
+}
+
+.stats-bar{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:28px;
+}
+
+.stat-chip{
+  background:var(--white);
+  border:1px solid var(--paper-line);
+  border-radius:var(--radius);
+  padding:13px 18px;
+  min-width:118px;
+  flex:1 1 118px;
+}
+
+.stat-num{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:28px;
+  color:var(--navy-deep);
+  line-height:1;
+}
+
+.stat-num.gold{
+  color:var(--gold);
+}
+
+.stat-num.green{
+  color:var(--green);
+}
+
+.stat-lbl{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:9.5px;
+  letter-spacing:0.12em;
+  color:var(--ink-faint);
+  text-transform:uppercase;
+  margin-top:4px;
+}
+
+.groups{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+  gap:16px;
+}
+
+.group-card{
+  background:var(--white);
+  border:1px solid var(--paper-line);
+  border-radius:14px;
+  padding:20px 20px 16px;
+  display:flex;
+  flex-direction:column;
+}
+
+.group-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:12px;
+  flex-wrap:wrap;
+}
+
+.group-code{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:13px;
+  letter-spacing:0.08em;
+  color:var(--white);
+  background:var(--navy-mid);
+  border-radius:5px;
+  padding:4px 8px;
+  line-height:1;
+  min-width:40px;
+  text-align:center;
+}
+
+.group-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--ink);
+  flex:1;
+  min-width:120px;
+}
+
+.group-count{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  color:var(--ink-faint);
+  white-space:nowrap;
+}
+
+.group-bar{
+  height:5px;
+  border-radius:99px;
+  background:var(--paper-line);
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+.group-bar-fill{
+  height:100%;
+  background:var(--green);
+  transition:width 0.35s ease;
+}
+
+.item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:9px 0;
+  border-top:1px solid #F1F4F2;
+  flex-wrap:wrap;
+}
+
+.item:first-of-type{
+  border-top:none;
+}
+
+.item-text{
+  font-size:13.5px;
+  line-height:1.45;
+  color:var(--ink);
+  flex:1;
+  min-width:150px;
+  padding-top:8px;
+}
+
+.item.stage-2 .item-text{
+  color:var(--ink-soft);
+}
+
+.status-pill{
+  min-width:110px;
+  height:34px;
+  padding:0 10px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-family:'IBM Plex Sans', sans-serif;
+  font-weight:600;
+  font-size:12px;
+  border:1.5px solid var(--paper-line);
+  background:var(--white);
+  color:var(--ink-faint);
+  cursor:pointer;
+  transition:all 0.15s ease;
+  white-space:nowrap;
+}
+
+.status-pill:focus-visible{
+  outline:2px solid var(--gold);
+  outline-offset:2px;
+}
+
+.status-pill[data-stage="0"]{
+  border-color:#C7D0CC;
+  color:var(--ink-faint);
+  background:var(--white);
+}
+
+.status-pill[data-stage="1"]{
+  border-color:var(--gold);
+  color:var(--gold);
+  background:var(--gold-soft);
+}
+
+.status-pill[data-stage="2"]{
+  border-color:var(--green);
+  color:var(--green);
+  background:var(--green-soft);
+}
+
+.status-pill .dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  border:1.5px solid currentColor;
+  flex:0 0 auto;
+}
+
+.status-pill[data-stage="1"] .dot,
+.status-pill[data-stage="2"] .dot{
+  background:currentColor;
+}
+
+.finish-banner{
+  margin-top:54px;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid var(--paper-line);
+}
+
+.finish-strip{
+  height:13px;
+  background-image:repeating-conic-gradient(var(--navy-deep) 0% 25%, var(--white) 0% 50%);
+  background-size:20px 20px;
+}
+
+.finish-body{
+  background:var(--navy-deep);
+  color:var(--white);
+  text-align:center;
+  padding:clamp(28px, 6vw, 40px) 20px clamp(32px, 6vw, 46px);
+}
+
+.finish-flag-label{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  letter-spacing:0.28em;
+  color:var(--gold);
+  text-transform:uppercase;
+  margin-bottom:10px;
+}
+
+.finish-title{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(26px, 5vw, 42px);
+  letter-spacing:0.04em;
+  margin:0 0 10px;
+}
+
+.finish-pct{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:18px;
+  color:var(--gold);
+}
+
+.finish-status{
+  font-size:13.5px;
+  color:#C7D3DD;
+  max-width:520px;
+  margin:10px auto 0;
+  line-height:1.5;
+}
+
+footer{
+  text-align:center;
+  padding:22px 16px 36px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  color:var(--ink-faint);
+  letter-spacing:0.03em;
+}
+
+#saveNote{
+  color:var(--green);
+  opacity:0;
+  transition:opacity 0.4s ease;
+  position:fixed;
+  top:20px;
+  right:20px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.08em;
+}
+
+#saveNote.show{
+  opacity:1;
+}
+
+@media (max-width:1024px){
+  .groups{
+    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  }
+}
+
+@media (max-width:768px){
+  .head-row{
+    align-items:flex-start;
+  }
+  
+  .gauge{
+    text-align:left;
+  }
+  
+  .stat-chip{
+    min-width:100px;
+    padding:11px 14px;
+  }
+  
+  .stat-num{
+    font-size:24px;
+  }
+}
+
+@media (max-width:480px){
+  .groups{
+    grid-template-columns:1fr;
+  }
+  
+  .status-pill{
+    min-width:96px;
+    font-size:11px;
+    height:32px;
+  }
+  
+  .group-card{
+    padding:16px 16px 12px;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div>
+      <p class="brand-eyebrow">Onyi Victory Obiajulu</p>
+      <h1 class="wordmark">Project Tracker</h1>
+      <p class="subtitle">Business Development for TIBA Design, Think Team, and Elquator</p>
+    </div>
+    <div class="gauge">
+      <div class="gauge-num"><span id="headerPct">0</span><span>%</span></div>
+      <div class="gauge-label">Complete</div>
+      <div class="gauge-sub" id="gaugeSub"></div>
+    </div>
+  </div>
+</header>
+
+<div class="rail-wrap">
+  <div class="rail-track">
+    <div class="rail-fill" id="railFill"></div>
+  </div>
+  <div class="rail-endcaps">
+    <span>0%</span>
+    <span>100%</span>
+  </div>
+</div>
+
+<main>
+
+  <div class="stats-bar">
+    <div class="stat-chip">
+      <div class="stat-num green" id="statDone">0</div>
+      <div class="stat-lbl">Finished</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num gold" id="statCodeReady">0</div>
+      <div class="stat-lbl">In Progress</div>
+    </div>
+    <div class="stat-chip">
+      <div class="stat-num" id="statNotStarted">0</div>
+      <div class="stat-lbl">Not Started</div>
+    </div>
+  </div>
+
+  <div id="groupsWrap"></div>
+
+  <div class="section-head">
+    <p class="section-eyebrow">Progress Timeline</p>
+    <h2 class="section-title">Journey So Far</h2>
+  </div>
+
+  <div id="progressTimeline"></div>
+
+  <div class="finish-banner">
+    <div class="finish-strip"></div>
+    <div class="finish-body">
+      <p class="finish-flag-label">Voyage Status</p>
+      <h3 class="finish-title" id="finishRemainLine">0 tasks to go</h3>
+      <p class="finish-pct" id="finishPct">0% complete</p>
+      <p class="finish-status" id="finishStatus">Get started to see progress here.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <p>Click any task to cycle through statuses. Changes save automatically. <span id="saveNote">✓ Saved</span></p>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  const STAGE_LABEL = ['Not started', 'In progress', 'Finished'];
+  const STAGE_COLORS = ['#8298A8', '#B4841E', '#1B7A57'];
+
+  function makeTask(label, status=0){
+    return {
+      id:Math.random().toString(36).slice(2),
+      label,
+      status,
+      enteredAt:null,
+    };
+  }
+
+  const DEFAULT_DATA = [
+    {
+      id: 'setup-travel',
+      code: 'SETUP',
+      name: 'Miscellaneous Errands',
+      ids: ['setup-1','setup-2','setup-3','setup-4','setup-5','setup-6','setup-7'],
+      items: [
+        'Find the free zone, learn how to set it up',
+        'Meet the equity lawyer',
+        'Meet the escrow company',
+        'Meet Miss N — agree investor money moves',
+        'Find out what licenses are needed',
+        'Set up the company in the free zone',
+        'Apply for the work visa',
+      ],
+    },
+    {
+      id: 'tiba',
+      code: 'TIBA',
+      name: 'TIBA Design',
+      ids: ['tiba-1','tiba-2','tiba-3','tiba-4','tiba-5'],
+      items: [
+        'TIBA Working Profile',
+        'TIBA Business Plan',
+        'TIBA Africa Proposal',
+        'Add the Speedboat part',
+        'Final review & send',
+      ],
+    },
+    {
+      id: 'think-team',
+      code: 'TT',
+      name: 'Think Team',
+      ids: ['tt-1','tt-2','tt-3','tt-4','tt-5','tt-6','tt-7','tt-8','tt-9','tt-10','tt-11','tt-12','tt-13','tt-14','tt-15','tt-16','tt-17','tt-18','tt-19','tt-20','tt-21','tt-22','tt-23','tt-24','tt-25','tt-26','tt-27','tt-28'],
+      items: [
+        'Pingendum: Working Profile',
+        'Pingendum: Business Plan',
+        'Pingendum: Marketing Plan',
+        'Pingendum: Marketing Budget',
+        'Pingendum: Website Brief',
+        'Legacy Note: Working Profile',
+        'Legacy Note: Business Plan',
+        'Legacy Note: Marketing Plan',
+        'Legacy Note: Marketing Budget',
+        'Legacy Note: Website Brief',
+        'SML: Working Profile',
+        'SML: Business Plan',
+        'SML: Marketing Plan',
+        'SML: Marketing Budget',
+        'SML: Website Brief',
+        'Gotcha: Working Profile',
+        'Gotcha: Business Plan',
+        'Gotcha: Marketing Plan',
+        'Gotcha: Marketing Budget',
+        'Gotcha: Website Brief',
+        'Finance: Working Profile',
+        'Finance: Business Plan',
+        'Finance: Marketing Plan',
+        'Finance: Marketing Budget',
+        'Finance: Website Brief',
+        'Warehouse: Working Profile',
+        'Warehouse: Business Plan',
+        'Think Team Website',
+      ],
+    },
+    {
+      id: 'elquator',
+      code: 'ELQ',
+      name: 'Elquator',
+      ids: ['elq-1','elq-2','elq-3','elq-4','elq-5','elq-6','elq-7','elq-8','elq-9','elq-10','elq-11','elq-12','elq-13','elq-14'],
+      items: [
+        'Fuel: Working Profile',
+        'Fuel: Business Plan',
+        'Storage: Working Profile',
+        'Storage: Business Plan',
+        'Ecoware: Working Profile',
+        'Ecoware: Business Plan',
+        'Wind Turbine: Working Profile',
+        'Wind Turbine: Business Plan',
+        'Smart Energy: Working Profile',
+        'Smart Energy: Business Plan',
+        'Standalone Wind: Working Profile',
+        'Standalone Wind: Business Plan',
+        'R&D & Street Light: Working Profile',
+        'R&D & Street Light: Business Plan',
+      ],
+    },
+  ];
+
+  let state = {};
+  const groups = DEFAULT_DATA;
+  
+  // Initialize state
+  groups.forEach(g => {
+    g.ids.forEach(id => {
+      state[id] = { stage: 0, enteredAt: null };
+    });
+  });
+
+  const groupsWrap = document.getElementById('groupsWrap');
+
+  function flashSaved(){
+    const el = document.getElementById('saveNote');
+    el.classList.add('show');
+    clearTimeout(flashSaved._t);
+    flashSaved._t = setTimeout(()=>el.classList.remove('show'), 1400);
+  }
+
+  function applyStateToUI(){
+    groups.forEach(g => {
+      g.ids.forEach(id => {
+        const s = state[id];
+        const pill = document.getElementById(`pill-${id}`);
+        const row = document.getElementById(`row-${id}`);
+        if(!pill) return;
+        pill.dataset.stage = s.stage;
+        pill.querySelector('.pill-text').textContent = STAGE_LABEL[s.stage];
+        row.classList.toggle('stage-2', s.stage === 2);
+      });
+    });
+  }
+
+  function renderProgressLine(){
+    const wrap = document.getElementById('progressTimeline');
+    wrap.innerHTML = '';
+
+    const live = [];
+    groups.forEach(g => {
+      g.ids.forEach((id, i) => {
+        const s = state[id];
+        if(s.stage >= 1 && s.enteredAt){
+          live.push({
+            enteredAt: s.enteredAt,
+            stage: s.stage,
+            text: g.items[i],
+            group: g.code,
+          });
+        }
+      });
+    });
+    live.sort((a, b) => a.enteredAt - b.enteredAt);
+
+    if(live.length === 0){
+      wrap.innerHTML = '<p style="color:var(--ink-faint); font-size:13.5px; padding:20px 0;">Start marking tasks to see your progress timeline here.</p>';
+      return;
+    }
+
+    live.forEach(entry => {
+      const div = document.createElement('div');
+      div.className = 'tl-item';
+      const dateStr = new Date(entry.enteredAt).toLocaleDateString(undefined, {day:'2-digit', month:'short', year:'numeric'});
+      const isDone = entry.stage === 2;
+      div.innerHTML = `
+        <div class="tl-dot ${isDone ? '' : 'coding'}"></div>
+        <div class="tl-tick"></div>
+        <div class="tl-date mono ${isDone ? '' : 'coding'}">${dateStr} · ${entry.group}</div>
+        <div class="tl-text">${entry.text}${isDone ? '' : '<div class="tl-tag">In progress</div>'}</div>
+      `;
+      wrap.appendChild(div);
+    });
+  }
+
+  function recalcAll(){
+    let doneTotal = 0, codeReadyTotal = 0, notStartedTotal = 0;
+
+    groups.forEach(g => {
+      let groupDone = 0;
+      g.ids.forEach(id => {
+        const s = state[id];
+        if(s.stage === 2){ groupDone++; doneTotal++; }
+        else if(s.stage === 1){ codeReadyTotal++; }
+        else { notStartedTotal++; }
+      });
+      const pct = g.ids.length ? Math.round((groupDone / g.ids.length) * 100) : 0;
+      const bar = document.getElementById(`bar-${g.code}`);
+      const count = document.getElementById(`count-${g.code}`);
+      if(bar) bar.style.width = pct + '%';
+      if(count) count.textContent = `${groupDone}/${g.ids.length}`;
+    });
+
+    const totalTasks = groups.reduce((sum, g) => sum + g.ids.length, 0);
+    const totalDone = doneTotal;
+    const overallPct = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
+    const codeReadyPct = totalTasks > 0 ? Math.round((codeReadyTotal / totalTasks) * 100) : 0;
+    const remaining = totalTasks - doneTotal;
+
+    document.getElementById('headerPct').textContent = overallPct;
+    document.getElementById('gaugeSub').textContent = codeReadyPct > 0 ? `+${codeReadyPct}% in progress` : '';
+    document.getElementById('railFill').style.width = overallPct + '%';
+
+    document.getElementById('statDone').textContent = doneTotal;
+    document.getElementById('statCodeReady').textContent = codeReadyTotal;
+    document.getElementById('statNotStarted').textContent = notStartedTotal;
+
+    document.getElementById('finishPct').textContent = overallPct + '% of all tasks complete';
+
+    const finishTitle = document.getElementById('finishRemainLine');
+    const finishStatus = document.getElementById('finishStatus');
+    if(remaining === 0){
+      finishTitle.textContent = 'All tasks complete — Mission accomplished';
+      finishStatus.textContent = 'Every task is finished. The full project is done.';
+    } else {
+      finishTitle.textContent = `${remaining} task${remaining === 1 ? '' : 's'} remaining`;
+      finishStatus.textContent = `${totalDone} of ${totalTasks} total tasks finished across all projects.`;
+    }
+  }
+
+  function render(){
+    groupsWrap.innerHTML = '';
+
+    groups.forEach(g => {
+      const section = document.createElement('div');
+      section.className = 'section-head';
+      section.innerHTML = `
+        <p class="section-eyebrow">${g.name.toUpperCase()}</p>
+        <h2 class="section-title">${g.name}</h2>
+      `;
+      groupsWrap.appendChild(section);
+
+      const card = document.createElement('div');
+      card.className = 'group-card';
+
+      const head = document.createElement('div');
+      head.className = 'group-head';
+      head.innerHTML = `
+        <div class="group-code">${g.code}</div>
+        <div class="group-title">${g.name}</div>
+        <div class="group-count"><span id="count-${g.code}">0/${g.ids.length}</span></div>
+      `;
+      card.appendChild(head);
+
+      const bar = document.createElement('div');
+      bar.className = 'group-bar';
+      const barFill = document.createElement('div');
+      barFill.className = 'group-bar-fill';
+      barFill.id = `bar-${g.code}`;
+      bar.appendChild(barFill);
+      card.appendChild(bar);
+
+      g.ids.forEach((id, i) => {
+        const s = state[id];
+        const item = document.createElement('div');
+        item.className = `item ${s.stage === 2 ? 'stage-2' : ''}`;
+        item.id = `row-${id}`;
+        item.innerHTML = `
+          <div class="item-text">${g.items[i]}</div>
+          <button class="status-pill" id="pill-${id}" data-id="${id}" data-stage="${s.stage}">
+            <span class="dot"></span>
+            <span class="pill-text">${STAGE_LABEL[s.stage]}</span>
+          </button>
+        `;
+        card.appendChild(item);
+      });
+
+      groupsWrap.appendChild(card);
+    });
+
+    applyStateToUI();
+  }
+
+  groupsWrap.addEventListener('click', (e) => {
+    const pill = e.target.closest('.status-pill');
+    if(!pill) return;
+    const id = pill.dataset.id;
+    const s = state[id];
+    s.stage = (s.stage + 1) % 3;
+    if(s.stage >= 1 && !s.enteredAt){ s.enteredAt = Date.now(); }
+    if(s.stage === 0){ s.enteredAt = null; }
+    applyStateToUI();
+    renderProgressLine();
+    recalcAll();
+    flashSaved();
+  });
+
+  // Initial render
+  render();
+  renderProgressLine();
+  recalcAll();
+
+})();
+</script>
+
+</body>
+</html>
