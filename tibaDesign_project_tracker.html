@@ -6,6 +6,8 @@
 <title>Project Tracker — Onyi Victory Obiajulu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 :root{
   --paper:#EDF1EF;
@@ -673,7 +675,8 @@ footer{
   let state = {};
   const groups = DEFAULT_DATA;
   
-  // Initialize state
+  // Initialize state with defaults — real values load from Firebase below,
+  // this is just so nothing is undefined before that finishes.
   groups.forEach(g => {
     g.ids.forEach(id => {
       state[id] = { stage: 0, enteredAt: null };
@@ -681,6 +684,49 @@ footer{
   });
 
   const groupsWrap = document.getElementById('groupsWrap');
+
+  // ---- Firebase setup ----
+  // This tracker previously had NO persistence at all — clicks updated the
+  // page in memory only, and reloading (or anyone else opening the link)
+  // reset everything to zero. This wires it to the same shared Firebase
+  // project the other trackers use.
+  const firebaseConfig = {
+    apiKey: "AIzaSyBYen3EQPWmj_RnwZM94iebO-u5AS3ss9E",
+    authDomain: "project-trackers-1ae96.firebaseapp.com",
+    databaseURL: "https://project-trackers-1ae96-default-rtdb.firebaseio.com",
+    projectId: "project-trackers-1ae96",
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const DB_PATH = 'tiba_master_tracker_v1'; // unique to this tracker — don't reuse elsewhere
+
+  async function loadState(){
+    try{
+      const snapshot = await db.ref(DB_PATH).once('value');
+      const data = snapshot.val();
+      if(data && data.items){
+        Object.keys(data.items).forEach(id=>{ if(state[id]) state[id] = data.items[id]; });
+      }
+    }catch(e){ console.error('Load failed', e); }
+
+    // Live sync: reflect changes made elsewhere without needing a reload.
+    db.ref(DB_PATH).on('value', (snapshot)=>{
+      const data = snapshot.val();
+      if(data && data.items){
+        Object.keys(data.items).forEach(id=>{ if(state[id]) state[id] = data.items[id]; });
+        applyStateToUI();
+        renderProgressLine();
+        recalcAll();
+      }
+    });
+  }
+
+  async function saveState(){
+    try{
+      await db.ref(DB_PATH).set({ items: state, updatedAt: Date.now() });
+      flashSaved();
+    }catch(e){ console.error('Save failed', e); }
+  }
 
   function flashSaved(){
     const el = document.getElementById('saveNote');
@@ -852,13 +898,17 @@ footer{
     applyStateToUI();
     renderProgressLine();
     recalcAll();
-    flashSaved();
+    saveState();
   });
 
-  // Initial render
-  render();
-  renderProgressLine();
-  recalcAll();
+  // Load any previously saved state from Firebase FIRST, then render —
+  // otherwise the page always starts from zero before the load finishes.
+  (async function init(){
+    await loadState();
+    render();
+    renderProgressLine();
+    recalcAll();
+  })();
 
 })();
 </script>
